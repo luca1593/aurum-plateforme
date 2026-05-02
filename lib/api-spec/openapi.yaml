@@ -1,0 +1,651 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: contact
+    description: Contact & lead capture
+  - name: candidates
+    description: Candidate management
+  - name: pipeline
+    description: CRM pipeline management
+  - name: matching
+    description: Matching system
+  - name: admin
+    description: Admin analytics
+  - name: client
+    description: Client portal
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /contact:
+    post:
+      operationId: submitContact
+      tags: [contact]
+      summary: Submit a contact / book a call request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactRequest"
+      responses:
+        "201":
+          description: Contact request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /contact/stats:
+    get:
+      operationId: getContactStats
+      tags: [contact]
+      summary: Get contact/lead statistics
+      responses:
+        "200":
+          description: Contact stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactStats"
+
+  /contact/list:
+    get:
+      operationId: listContacts
+      tags: [contact]
+      summary: List all contacts/leads
+      responses:
+        "200":
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactItem"
+
+  /candidates:
+    get:
+      operationId: listCandidates
+      tags: [candidates]
+      summary: List candidates with optional filters
+      parameters:
+        - name: language
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: minExperience
+          in: query
+          schema:
+            type: integer
+        - name: maxRate
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Candidate"
+    post:
+      operationId: createCandidate
+      tags: [candidates]
+      summary: Create a new candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCandidateRequest"
+      responses:
+        "201":
+          description: Candidate created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+
+  /candidates/{id}:
+    get:
+      operationId: getCandidate
+      tags: [candidates]
+      summary: Get a candidate by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+    patch:
+      operationId: updateCandidate
+      tags: [candidates]
+      summary: Update a candidate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCandidateRequest"
+      responses:
+        "200":
+          description: Updated candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+    delete:
+      operationId: deleteCandidate
+      tags: [candidates]
+      summary: Delete a candidate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /pipeline:
+    get:
+      operationId: getPipeline
+      tags: [pipeline]
+      summary: Get CRM pipeline with leads grouped by stage
+      responses:
+        "200":
+          description: Pipeline data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineData"
+
+  /pipeline/leads:
+    post:
+      operationId: createPipelineLead
+      tags: [pipeline]
+      summary: Add a contact to the CRM pipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePipelineLeadRequest"
+      responses:
+        "201":
+          description: Pipeline lead created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineLead"
+
+  /pipeline/leads/{id}:
+    patch:
+      operationId: updatePipelineLead
+      tags: [pipeline]
+      summary: Move a lead to a different stage or update notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePipelineLeadRequest"
+      responses:
+        "200":
+          description: Updated pipeline lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineLead"
+    delete:
+      operationId: deletePipelineLead
+      tags: [pipeline]
+      summary: Remove a lead from the pipeline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /matching:
+    get:
+      operationId: getMatches
+      tags: [matching]
+      summary: Get candidate matches for a contact/client need
+      parameters:
+        - name: contactId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of matched candidates with score
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchResult"
+    post:
+      operationId: createMatch
+      tags: [matching]
+      summary: Assign a candidate to a contact/client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchRequest"
+      responses:
+        "201":
+          description: Match created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResult"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get full admin analytics stats
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /client/{contactId}:
+    get:
+      operationId: getClientPortal
+      tags: [client]
+      summary: Get client portal data (matches, status, pipeline stage)
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client portal data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientPortalData"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ContactRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+        company:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        need:
+          type: string
+          minLength: 10
+      required: [name, company, email, need]
+
+    ContactResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+      required: [id, message]
+
+    ContactStats:
+      type: object
+      properties:
+        totalLeads:
+          type: integer
+        thisWeek:
+          type: integer
+        thisMonth:
+          type: integer
+      required: [totalLeads, thisWeek, thisMonth]
+
+    ContactItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        company:
+          type: string
+        email:
+          type: string
+        need:
+          type: string
+        createdAt:
+          type: string
+      required: [id, name, company, email, need, createdAt]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        role:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+        experienceYears:
+          type: integer
+        hourlyRate:
+          type: integer
+        availability:
+          type: string
+        status:
+          type: string
+        bio:
+          type: string
+        location:
+          type: string
+        createdAt:
+          type: string
+      required: [id, name, role, skills, language, experienceYears, hourlyRate, availability, status, createdAt]
+
+    CreateCandidateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+        role:
+          type: string
+          minLength: 2
+        skills:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+        experienceYears:
+          type: integer
+          minimum: 0
+        hourlyRate:
+          type: integer
+          minimum: 0
+        availability:
+          type: string
+        status:
+          type: string
+        bio:
+          type: string
+        location:
+          type: string
+      required: [name, role, skills, language, experienceYears, hourlyRate, availability, status]
+
+    UpdateCandidateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+        experienceYears:
+          type: integer
+        hourlyRate:
+          type: integer
+        availability:
+          type: string
+        status:
+          type: string
+        bio:
+          type: string
+        location:
+          type: string
+
+    PipelineStage:
+      type: string
+      enum: [new, contacted, qualified, proposal, negotiation, closed_won, closed_lost]
+
+    PipelineLead:
+      type: object
+      properties:
+        id:
+          type: integer
+        contactId:
+          type: integer
+        contact:
+          $ref: "#/components/schemas/ContactItem"
+        stage:
+          $ref: "#/components/schemas/PipelineStage"
+        notes:
+          type: string
+        value:
+          type: integer
+        updatedAt:
+          type: string
+        createdAt:
+          type: string
+      required: [id, contactId, stage, updatedAt, createdAt]
+
+    CreatePipelineLeadRequest:
+      type: object
+      properties:
+        contactId:
+          type: integer
+        stage:
+          $ref: "#/components/schemas/PipelineStage"
+        notes:
+          type: string
+        value:
+          type: integer
+      required: [contactId, stage]
+
+    UpdatePipelineLeadRequest:
+      type: object
+      properties:
+        stage:
+          $ref: "#/components/schemas/PipelineStage"
+        notes:
+          type: string
+        value:
+          type: integer
+
+    PipelineData:
+      type: object
+      properties:
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              stage:
+                $ref: "#/components/schemas/PipelineStage"
+              label:
+                type: string
+              leads:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PipelineLead"
+              totalValue:
+                type: integer
+            required: [stage, label, leads, totalValue]
+      required: [stages]
+
+    MatchResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        contactId:
+          type: integer
+        candidateId:
+          type: integer
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+        score:
+          type: integer
+        status:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+      required: [id, contactId, candidateId, score, status, createdAt]
+
+    CreateMatchRequest:
+      type: object
+      properties:
+        contactId:
+          type: integer
+        candidateId:
+          type: integer
+        score:
+          type: integer
+        notes:
+          type: string
+        status:
+          type: string
+      required: [contactId, candidateId, score, status]
+
+    AdminStats:
+      type: object
+      properties:
+        totalLeads:
+          type: integer
+        thisMonth:
+          type: integer
+        thisWeek:
+          type: integer
+        totalCandidates:
+          type: integer
+        activeCandidates:
+          type: integer
+        totalMatches:
+          type: integer
+        conversionRate:
+          type: number
+        pipelineValue:
+          type: integer
+        leadsByStage:
+          type: array
+          items:
+            type: object
+            properties:
+              stage:
+                type: string
+              count:
+                type: integer
+            required: [stage, count]
+        recentLeads:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactItem"
+      required: [totalLeads, thisMonth, thisWeek, totalCandidates, activeCandidates, totalMatches, conversionRate, pipelineValue, leadsByStage, recentLeads]
+
+    ClientPortalData:
+      type: object
+      properties:
+        contact:
+          $ref: "#/components/schemas/ContactItem"
+        pipelineStage:
+          $ref: "#/components/schemas/PipelineStage"
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchResult"
+        statusMessage:
+          type: string
+      required: [contact, matches, statusMessage]
