@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "_iM0KDO1233OmlM2DDfAl"
+uri = "file://README.pdf"
+type = "pdf"
+title = "README.pdf — Documentation Aurum"
